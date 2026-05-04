@@ -23,9 +23,56 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
         
         .btn-random:active { transform: scale(0.95); }
+
+        /* Toast thông báo trượt từ trên xuống */
+        #toast-copy {
+            position: fixed;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 8px 20px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10000;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #toast-copy.show {
+            top: 24px;
+        }
+
+        /* Biểu tượng copy mờ */
+        .copy-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            opacity: 0.3;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+        }
+        .copy-overlay:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 selection:bg-sky-500/30">
+
+    <!-- Toast Thông báo -->
+    <div id="toast-copy">
+        <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+        Đã sao chép vào bộ nhớ tạm
+    </div>
 
     <div class="max-w-3xl mx-auto">
         <!-- Header -->
@@ -49,11 +96,16 @@
                 <label class="flex items-center gap-2 text-sm md:text-base font-semibold text-sky-400 mb-3">
                     <i data-lucide="file-text" class="w-5 h-5"></i> Nội dung bài đăng
                 </label>
-                <textarea
-                    id="post-content"
-                    placeholder="Nhập nội dung bạn muốn đăng tải lên nhóm Facebook..."
-                    class="w-full h-40 bg-black/50 border border-slate-700 rounded-xl p-4 text-sm md:text-base text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all resize-none placeholder:text-slate-600"
-                ></textarea>
+                <div class="relative group">
+                    <textarea
+                        id="post-content"
+                        placeholder="Nhập nội dung bạn muốn đăng tải lên nhóm Facebook..."
+                        class="w-full h-40 bg-black/50 border border-slate-700 rounded-xl p-4 text-sm md:text-base text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all resize-none placeholder:text-slate-600"
+                    ></textarea>
+                    <div class="copy-overlay" onclick="copyValue('post-content')" title="Sao chép">
+                        <i data-lucide="copy" class="w-4 h-4"></i>
+                    </div>
+                </div>
             </div>
 
             <!-- Image Upload Area -->
@@ -91,13 +143,16 @@
                     <i data-lucide="file-archive" class="w-5 h-5"></i> Tên file nén tải về (Tùy chọn)
                 </label>
                 <div class="flex items-stretch gap-2 h-12">
-                    <div class="relative flex-1">
+                    <div class="relative flex-1 group">
                         <input 
                             type="text" 
                             id="custom-filename"
                             placeholder="Mặc định: AutoFB_ID..."
                             class="w-full h-full bg-black/50 border border-slate-700 rounded-lg px-4 text-sm md:text-base text-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
                         />
+                        <div class="copy-overlay" onclick="copyValue('custom-filename')" title="Sao chép">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                        </div>
                     </div>
                     <button 
                         onclick="randomizeFileName()"
@@ -133,6 +188,35 @@
         lucide.createIcons();
 
         let selectedFiles = [];
+
+        // Hàm sao chép chuyên dụng
+        function copyValue(id) {
+            const input = document.getElementById(id);
+            if (!input.value) return;
+
+            // Tạo textarea ẩn để copy
+            const temp = document.createElement("textarea");
+            temp.value = input.value;
+            document.body.appendChild(temp);
+            temp.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast();
+            } catch (err) {
+                console.error('Không thể sao chép');
+            }
+            
+            document.body.removeChild(temp);
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast-copy');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
 
         function handleFiles(event) {
             const files = Array.from(event.target.files);
