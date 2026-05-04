@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Devchill Tools - Trình Tạo Gói Auto FB</title>
+    <title>Devchill Tools - Trình Tạo Gói</title>
     <!-- Tailwind CSS cho Giao diện -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- JSZip để nén file -->
@@ -21,6 +21,8 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .btn-random:active { transform: scale(0.95); }
     </style>
 </head>
 <body class="min-h-screen p-4 md:p-8 selection:bg-sky-500/30">
@@ -85,15 +87,28 @@
 
             <!-- File Name Option -->
             <div class="mb-8 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl">
-                <label class="flex items-center gap-2 text-sm md:text-base font-semibold text-violet-400 mb-2">
+                <label class="flex items-center gap-2 text-sm md:text-base font-semibold text-violet-400 mb-3">
                     <i data-lucide="file-archive" class="w-5 h-5"></i> Tên file nén tải về (Tùy chọn)
                 </label>
-                <input 
-                    type="text" 
-                    id="custom-filename"
-                    placeholder="VD: bai-dang-ban-hang (Nếu để trống sẽ dùng tên mặc định)"
-                    class="w-full bg-black/50 border border-slate-700 rounded-lg p-3 text-sm md:text-base text-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
-                />
+                <div class="flex items-stretch gap-2 h-12">
+                    <div class="relative flex-1">
+                        <input 
+                            type="text" 
+                            id="custom-filename"
+                            placeholder="Mặc định: AutoFB_ID..."
+                            class="w-full h-full bg-black/50 border border-slate-700 rounded-lg px-4 text-sm md:text-base text-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder:text-slate-600"
+                        />
+                    </div>
+                    <button 
+                        onclick="randomizeFileName()"
+                        type="button"
+                        class="btn-random px-4 bg-gradient-to-br from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white rounded-lg flex items-center justify-center transition-all shadow-lg shadow-violet-900/20 flex-shrink-0"
+                        title="Tạo tên ngẫu nhiên"
+                    >
+                        <i data-lucide="shuffle" class="w-5 h-5"></i>
+                        <span class="hidden md:inline ml-2 text-sm font-medium">Ngẫu nhiên</span>
+                    </button>
+                </div>
             </div>
 
             <!-- Actions -->
@@ -123,10 +138,7 @@
             const files = Array.from(event.target.files);
             const validImages = files.filter(file => file.type.startsWith('image/'));
             selectedFiles = [...selectedFiles, ...validImages];
-            
-            // Reset input để có thể chọn lại cùng 1 file nếu cần
             event.target.value = ''; 
-            
             renderPreviews();
         }
 
@@ -138,7 +150,6 @@
         function renderPreviews() {
             const container = document.getElementById('preview-container');
             const countLabel = document.getElementById('image-count');
-            
             container.innerHTML = '';
             countLabel.innerText = `(${selectedFiles.length})`;
 
@@ -146,12 +157,11 @@
                 const url = URL.createObjectURL(file);
                 const div = document.createElement('div');
                 div.className = 'relative group aspect-square rounded-lg overflow-hidden border border-slate-700 bg-black shadow-inner';
-                
                 div.innerHTML = `
                     <img src="${url}" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
                     <button 
                         onclick="event.stopPropagation(); removeImage(${index})"
-                        class="absolute top-1.5 right-1.5 bg-red-500/90 hover:bg-red-500 text-white p-1.5 rounded-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all shadow-md"
+                        class="absolute top-1.5 right-1.5 bg-red-500/90 hover:bg-red-500 text-white p-1.5 rounded-md transition-all shadow-md"
                         title="Xóa ảnh này"
                     >
                         <i data-lucide="x" class="w-3 h-3"></i>
@@ -159,9 +169,16 @@
                 `;
                 container.appendChild(div);
             });
-            
-            // Gọi lại để render icon X mới thêm
             lucide.createIcons();
+        }
+
+        function randomizeFileName() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 9; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            document.getElementById('custom-filename').value = result;
         }
 
         async function generateZipPack() {
@@ -174,20 +191,15 @@
                 return;
             }
 
-            // Đổi UI sang trạng thái Đang xử lý
-            const originalBtnHTML = `<i data-lucide="download" class="w-5 h-5"></i> Tạo File Gói (.ZIP)`;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Đang nén file...`;
+            const originalBtnHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Đang nén...`;
             btn.disabled = true;
             lucide.createIcons();
 
             try {
-                // Khởi tạo JSZip
                 const zip = new JSZip();
-                
-                // Tạo mã ID duy nhất để extension nhận diện
-                const uniqueId = 'DC_PACK_' + Date.now().toString() + '_' + Math.floor(Math.random() * 10000).toString();
+                const uniqueId = 'DC_PACK_' + Date.now().toString() + '_' + Math.floor(Math.random() * 1000).toString();
 
-                // 1. Ghi file post_data.json
                 const postMetadata = {
                     id: uniqueId,
                     content: content,
@@ -196,27 +208,18 @@
                 };
                 zip.file("post_data.json", JSON.stringify(postMetadata, null, 2));
 
-                // 2. Ghi hình ảnh
                 selectedFiles.forEach((file, index) => {
                     const extension = file.name.split('.').pop() || 'jpg';
                     const newFileName = `image_${index + 1}_${Date.now()}.${extension}`;
                     zip.file(newFileName, file);
                 });
 
-                // 3. Tiến hành đóng gói file Zip
                 const blob = await zip.generateAsync({ type: "blob" });
                 const url = URL.createObjectURL(blob);
                 
-                // Xử lý tên file tùy chỉnh
-                let finalFileName = customFileNameInput;
-                if (!finalFileName) {
-                    finalFileName = `AutoFB_${uniqueId}`;
-                } else {
-                    // Loại bỏ đuôi .zip nếu người dùng lỡ nhập vào để tránh tên thành .zip.zip
-                    finalFileName = finalFileName.replace(/\.zip$/i, '');
-                }
+                let finalFileName = customFileNameInput || `AutoFB_${uniqueId}`;
+                finalFileName = finalFileName.replace(/\.zip$/i, '');
 
-                // 4. Tải xuống
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = `${finalFileName}.zip`;
@@ -226,10 +229,9 @@
                 URL.revokeObjectURL(url);
                 
             } catch (error) {
-                console.error("Lỗi khi tạo gói:", error);
-                alert("Đã xảy ra lỗi khi đóng gói file. Vui lòng thử lại!");
+                console.error("Lỗi:", error);
+                alert("Đã xảy ra lỗi khi đóng gói!");
             } finally {
-                // Khôi phục UI nút bấm
                 btn.innerHTML = originalBtnHTML;
                 btn.disabled = false;
                 lucide.createIcons();
